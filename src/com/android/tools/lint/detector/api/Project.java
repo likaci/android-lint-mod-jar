@@ -9,7 +9,6 @@ import com.android.annotations.NonNull;
 import com.android.annotations.Nullable;
 import com.android.build.FilterData;
 import com.android.build.OutputFile;
-import com.android.build.OutputFile.FilterType;
 import com.android.builder.model.AndroidArtifact;
 import com.android.builder.model.AndroidArtifactOutput;
 import com.android.builder.model.AndroidLibrary;
@@ -697,38 +696,49 @@ public class Project {
     }
 
     private List<File> getAospJavaClassPath() {
-        List<File> classDirs = new ArrayList(1);
-        Iterator i$ = this.getIntermediateDirs().iterator();
+        List<File> classDirs = new ArrayList<File>(1);
 
-        while(i$.hasNext()) {
-            File dir = (File)i$.next();
-            File classes = new File(dir, "classes");
-            if(classes.exists()) {
+        for (File dir : getIntermediateDirs()) {
+            File classes = new File(dir, "classes"); //$NON-NLS-1$
+            if (classes.exists()) {
                 classDirs.add(classes);
             } else {
-                classes = new File(dir, "classes.jar");
-                if(classes.exists()) {
+                classes = new File(dir, "classes.jar"); //$NON-NLS-1$
+                if (classes.exists()) {
                     classDirs.add(classes);
                 }
             }
         }
 
-        if(classDirs.isEmpty()) {
-            this.mClient.log((Throwable)null, "No bytecode found: Has the project been built? (%1$s)", new Object[]{this.getName()});
+        if (classDirs.isEmpty()) {
+            mClient.log(null,
+                    "No bytecode found: Has the project been built? (%1$s)", getName());
         }
 
         return classDirs;
     }
 
     private List<File> getIntermediateDirs() {
-        List<File> intermediates = new ArrayList();
-        String moduleName = this.mDir.getName();
-        String top = getAospTop();
-        String[] outFolders = new String[]{top + "/out/host/common/obj", top + "/out/target/common/obj", getAospHostOut() + "/obj", getAospProductOut() + "/obj"};
-        String[] moduleClasses = new String[]{"APPS", "JAVA_LIBRARIES"};
-        String[] arr$ = outFolders;
-        int len$ = outFolders.length;
+        // See build/core/definitions.mk and in particular the "intermediates-dir-for" definition
+        List<File> intermediates = new ArrayList<File>();
 
+        // TODO: Look up the module name, e.g. LOCAL_MODULE. However,
+        // some Android.mk files do some complicated things with it - and most
+        // projects use the same module name as the directory name.
+        String moduleName = mDir.getName();
+        moduleName = "StvThemeManager";
+
+        String top = getAospTop();
+        final String[] outFolders = new String[] {
+            top + "/out/host/common/obj",             //$NON-NLS-1$
+            top + "/out/target/common/obj",           //$NON-NLS-1$
+            getAospHostOut() + "/obj",                //$NON-NLS-1$
+            getAospProductOut() + "/obj"              //$NON-NLS-1$
+        };
+        final String[] moduleClasses = new String[] {
+                "APPS",                //$NON-NLS-1$
+                "JAVA_LIBRARIES",      //$NON-NLS-1$
+        };
 
         for (String out : outFolders) {
             assert new File(out.replace('/', File.separatorChar)).exists() : out;
