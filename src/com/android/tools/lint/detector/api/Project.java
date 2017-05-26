@@ -41,6 +41,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -837,6 +838,8 @@ public class Project {
         } catch (IOException var16) {
             ;
         }
+        moduleName = getModuleName(dir);
+        log("ModuleName: " + moduleName);
 
         String top = getAospTop();
         String[] outFolders = new String[]{top + "/out/host/common/obj", top + "/out/target/common/obj", getAospHostOut() + "/obj", getAospProductOut() + "/obj"};
@@ -856,6 +859,7 @@ public class Project {
                 String moduleClass = var10[var12];
                 String path = out + '/' + moduleClass + '/' + moduleName + "_intermediates";
                 File file = new File(path.replace('/', File.separatorChar));
+                //log("getIntermediateDirs: " + path);
                 if (file.exists()) {
                     intermediates.add(file);
                 }
@@ -863,6 +867,27 @@ public class Project {
         }
 
         return intermediates;
+    }
+
+    private String getModuleName(File dir) {
+        String moduleName = dir.getName();
+        File mk = new File(dir, "Android.mk");
+        Pattern pattern = Pattern.compile("LOCAL_PACKAGE_NAME\\W*:=\\W*(.*)");
+        if (mk.exists()) {
+            try {
+                List<String> lines = Files.readLines(mk, Charset.defaultCharset());
+                for (String line : lines) {
+                    Matcher matcher = pattern.matcher(line);
+                    if (matcher.find()) {
+                        moduleName = matcher.group(1);
+                        break;
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return moduleName;
     }
 
     private void extractAospMinSdkVersion() {
@@ -1086,4 +1111,9 @@ public class Project {
     public LintClient getClient() {
         return this.client;
     }
+
+    private void log(String str) {
+        this.client.log(Severity.WARNING, null, str, null);
+    }
+
 }
