@@ -38,6 +38,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -726,7 +727,7 @@ public class Project {
         // some Android.mk files do some complicated things with it - and most
         // projects use the same module name as the directory name.
         String moduleName = mDir.getName();
-        moduleName = "StvThemeManager";
+        moduleName = getModuleName();
 
         String top = getAospTop();
         final String[] outFolders = new String[] {
@@ -753,6 +754,27 @@ public class Project {
         }
 
         return intermediates;
+    }
+
+    private String getModuleName() {
+        String moduleName = mDir.getName();
+        File mk = new File(mDir, "Android.mk");
+        Pattern pattern = Pattern.compile("LOCAL_PACKAGE_NAME\\W*:=\\W*(.*)");
+        if (mk.exists()) {
+            try {
+                List<String> lines = Files.readLines(mk, Charset.defaultCharset());
+                for (String line : lines) {
+                    Matcher matcher = pattern.matcher(line);
+                    if (matcher.find()) {
+                        moduleName = matcher.group(1);
+                        break;
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return moduleName;
     }
 
     private void extractAospMinSdkVersion() {
@@ -1016,6 +1038,10 @@ public class Project {
         }
 
         return this.mResourceVisibility;
+    }
+
+    private void log(String str) {
+        this.mClient.log(null, str, null);
     }
 
 }
